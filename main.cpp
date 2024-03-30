@@ -4,120 +4,92 @@
 class Perceptron {
 private:
     int dimention;
-
     double* weights;
     double theta;
     double learningRate;
-
     const double bias = 1.0;
 
+    // Use pre-increment instead of post-increment for efficiency
     inline double dot_product(int index, const int* dataset) {
         int t_index = index * dimention;
         double dotp = 0.0;
-        for (int i = 0; i < dimention; i++) {
-            dotp = dotp + (weights[i] * dataset[t_index]);
-            t_index++;
+        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+            dotp += weights[i] * dataset[t_index++];
         }
-
-        dotp = dotp + (bias * weights[dimention]);
-        return dotp;
+        return dotp + bias * weights[dimention];
     }
 
+    // Removed the else clause as it's unnecessary
     inline bool ch_weights(int OUT, int TARGET, int index, const int* dataset) {
-        if (OUT != TARGET) {
-            int t_index = index * dimention;
-            for (int i = 0; i < dimention; i++) {
-                weights[i] = weights[i] + (learningRate * TARGET * dataset[t_index]);
-                t_index++;
-            }
-
-            weights[dimention] = weights[dimention] + (learningRate * TARGET);
-            return true;
-        }
-        else {
+        if (OUT == TARGET) {
             return false;
         }
+        int t_index = index * dimention;
+        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+            weights[i] += learningRate * TARGET * dataset[t_index++];
+        }
+        weights[dimention] += learningRate * TARGET;
+        return true;
     }
 
     [[nodiscard]] inline int act_func(double y_in) const {
         if (y_in > theta) {
             return 1;
         }
-        else if (y_in <= theta && y_in >= (theta - 1)) {
+        if (y_in >= theta - 1) {
             return 0;
         }
-        else {
-            return -1;
-        }
+        return -1;
     }
 
+    // Use bitwise OR assignment operator to update wchanged
     bool i_train(int dataset_size, int* dataset, int* target) {
-        int a_limit = (dataset_size / dimention);
-        double NET;
-        int OUT;
+        int a_limit = dataset_size / dimention;
         bool wchanged = false;
-
-        for (int i = 0; i < a_limit; i++) {
-            NET = dot_product(i, dataset);
-            OUT = act_func(NET);
-            if (ch_weights(OUT, target[i], i, dataset)) {
-                wchanged = true;
-            }
-
+        for (int i = 0; i < a_limit; ++i) {  // Use pre-increment
+            double NET = dot_product(i, dataset);
+            int OUT = act_func(NET);
+            wchanged |= ch_weights(OUT, target[i], i, dataset);
         }
-
         return wchanged;
     }
 
 public:
-    Perceptron(int dimention, double learningRate, double theta) {
-        this->dimention = dimention;
-        this->learningRate = learningRate;
-        this->theta = theta;
-
-        weights = new double[dimention + 1];
-        for (int i = 0; i < dimention + 1; i++) {
-            weights[i] = 0.0;
-        }
-    }
+    // Initialize weights in the constructor initializer list
+    Perceptron(int dimention, double learningRate, double theta)
+            : dimention(dimention), learningRate(learningRate), theta(theta), weights(new double[dimention + 1]{}) {}
 
     ~Perceptron() {
         delete[] weights;
     }
 
     void train(int dataset_size, int* dataset, int* target) {
-        bool weights_changed = true;
-
-        while (weights_changed) {
-            weights_changed = i_train(dataset_size, dataset, target);
-            // this->learningRate = this->learningRate * 0.80;
-        }
+        while (i_train(dataset_size, dataset, target)) {}
     }
 
     int predict(const int* dataset) {
         double NET = 0.0;
-        for (int i = 0; i < dimention; i++) {
-            NET = NET + (weights[i] * dataset[i]);
+        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+            NET += weights[i] * dataset[i];
         }
-
-        NET = NET + (bias * weights[dimention]);
-        return act_func(NET);
+        return act_func(NET + bias * weights[dimention]);
     }
 
+    // Use '\n' instead of std::endl to avoid unnecessary flushing of the output stream
     void print_weights() {
-        for (int i = 0; i < dimention; i++) {
-            std::cout << "w" << i << " = ";
-            std::cout << weights[i] << std::endl;
+        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+            std::cout << "w" << i << " = " << weights[i] << '\n';
         }
-
-        std::cout << "w_bias = " << weights[dimention] << std::endl;
+        std::cout << "w_bias = " << weights[dimention] << '\n';
     }
-
 };
+
 
 int main() {
 
-    /*int input[] = { 1, 1, 1, 0, 0, 1, 0, 0 };
+    std::cout << "Teste com OR: " << std::endl;
+
+    int input[] = { 1, 1, 1, 0, 0, 1, 0, 0 };
     int target[] = { 1, 1, 1, -1 };
     int size = 8;
 
@@ -131,52 +103,54 @@ int main() {
     p->train(size, input, target);
     p->print_weights();
 
-    delete p;*/
+    delete p;
 
+    std::cout << std::endl;
     std::cout << "Teste com letras: " << std::endl;
 
     int lput[] = {
-            'C', 'C', 'B',
-            'A', 'A', 'A',
-            'A', 'A', 'B',
-            'A', 'A', 'C',
-            'A', 'B', 'A',
-            'A', 'B', 'B',
-            'A', 'B', 'C',
-            'A', 'C', 'A',
-            'A', 'C', 'B',
-            'A', 'C', 'C',
-            'B', 'A', 'A',
-            'B', 'A', 'B',
-            'B', 'A', 'C',
-            'B', 'B', 'A',
-            'B', 'B', 'B',
-            'B', 'B', 'C',
-            'B', 'C', 'A',
-            'B', 'C', 'B',
-            'B', 'C', 'C',
-            'C', 'A', 'B',
-            'C', 'A', 'C',
-            'C', 'B', 'A',
-            'C', 'B', 'B',
-            'C', 'B', 'C',
-            'C', 'C', 'A',
-            'C', 'A', 'A',
-            'C', 'C', 'C'
+            -1,-1,1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,1,1,1,-1,1,1,1,/*1,-1,-1,-1,-1,-1,-1,*/
+            1,1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,1,1,1,1,1,-1,/*-1,1,-1,-1,-1,-1,-1,*/
+            -1,-1,1,1,1,1,1,-1,1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,1,1,1,1,-1,/*-1,-1,1,-1,-1,-1,-1,*/
+            1,1,1,1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,/*-1,-1,-1,1,-1,-1,-1,*/
+            1,1,1,1,1,1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,1,1,1,1,1,1,1,/*-1,-1,-1,-1,1,-1,-1,*/
+            -1,-1,-1,1,1,1,1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,/*-1,-1,-1,-1,-1,1,-1,*/
+            1,1,1,-1,-1,1,1,-1,1,-1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,1,1,1,-1,-1,1,1,/*-1,-1,-1,-1,-1,-1,1,*/
+            -1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,/*1,-1,-1,-1,-1,-1,-1,*/
+            1,1,1,1,1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,1,1,1,1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,1,1,1,1,1,-1,/*-1,1,-1,-1,-1,-1,-1,*/
+            -1,-1,1,1,1,-1,-1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,/*-1,-1,1,-1,-1,-1,-1,*/
+            1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,/*-1,-1,-1,1,-1,-1,-1,*/
+            1,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,1,1,1,1,1,1,/*-1,-1,-1,-1,1,-1,-1,*/
+            -1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,/*-1,-1,-1,-1,-1,1,-1,*/
+            1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,-1,1,-1,/*-1,-1,-1,-1,-1,-1,1,*/
+            -1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,1,1,1,1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,1,1,-1,-1,-1,1,1,/*1,-1,-1,-1,-1,-1,-1,*/
+            1,1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,1,1,1,1,1,-1,/*-1,1,-1,-1,-1,-1,-1,*/
+            -1,-1,1,1,1,-1,1,-1,1,-1,-1,-1,1,1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,/*-1,-1,1,-1,-1,-1,-1,*/
+            1,1,1,1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,/*-1,-1,-1,1,-1,-1,-1,*/
+            1,1,1,1,1,1,1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1,-1,1,1,1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,1,1,1,1,1,1,1,/*-1,-1,-1,-1,1,-1,-1,*/
+            -1,-1,-1,-1,1,1,1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,/*-1,-1,-1,-1,-1,1,-1,*/
+            1,1,1,-1,-1,1,1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,1,1,1,-1,-1,1,1/*-1,-1,-1,-1,-1,-1,1*/
+
+
     };
-    int ltarget[] {-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                   -1, -1, 1, -1, -1, 1, 1, 1, -1, -1,
-                   1, 1, -1};
-    auto *pl = new Perceptron(3, 0.05, 0.5);
+    int ltarget[] {1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1};
+    auto *pl = new Perceptron(63, 0.05, 0.5);
     pl->print_weights();
-    pl->train(81, lput, ltarget);
+    std::cout << std::endl;
+    pl->train(1323, lput, ltarget);
     pl->print_weights();
-    int t[] = {'C', 'A', 'A'};
-    int g[] = {'C', 'C', 'C',};
-    std::cout << pl->predict(t) << std::endl;
-    std::cout << pl->predict(g) << std::endl;
+    int a1[] = {-1,-1,1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,-1,-1,1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,1,1,1,1,1,1,1}; //é A, ou seja, esperamos que o predict seja 1.
+    int not_a1[] = {1,-1,1,1,1,1,-1,-1,1,-1,-1,-1,1,1,-1,1,-1,-1,-1,1,1,-1,1,-1,1,-1,-1,1,1,-1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,-1,1,1,1,1,-1}; // não é A, ou seja, esperamos que o predict seja -1.
+    int a2[] = {-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,-1,1,-1,1,-1,-1,1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1};
+    int not_a2[] = {1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,1,1,1,-1,-1,-1,1,-1,1,1,-1,-1,1,-1,-1,1,1,1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1};
 
+    std::cout << std::endl;
+    std::cout << "Teste do predict: " << std::endl;
 
+    std::cout << pl->predict(a1) << std::endl;
+    std::cout << pl->predict(not_a1) << std::endl;
+    std::cout << pl->predict(a2) << std::endl;
+    std::cout << pl->predict(not_a2) << std::endl;
 
 
     delete pl;
