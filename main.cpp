@@ -9,29 +9,31 @@ private:
     double learningRate;
     const double bias = 1.0;
 
-    // Use pre-increment instead of post-increment for efficiency
+    // Função que calcula o 'dot product' foi implementada dessa maneira
+    // Para lidar com o peso do bias estar contido no array de pesos.
     inline double dot_product(int index, const int* dataset) {
         int t_index = index * dimention;
         double dotp = 0.0;
-        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+        for (int i = 0; i < dimention; ++i) {
             dotp += weights[i] * dataset[t_index++];
         }
         return dotp + bias * weights[dimention];
     }
 
-    // Removed the else clause as it's unnecessary
+    // Função que atualisa os pesos.
     inline bool ch_weights(int OUT, int TARGET, int index, const int* dataset) {
         if (OUT == TARGET) {
             return false;
         }
         int t_index = index * dimention;
-        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+        for (int i = 0; i < dimention; ++i) {
             weights[i] += learningRate * TARGET * dataset[t_index++];
         }
         weights[dimention] += learningRate * TARGET;
         return true;
     }
 
+    // Função de ativação
     [[nodiscard]] inline int act_func(double y_in) const {
         if (y_in > theta) {
             return 1;
@@ -42,11 +44,13 @@ private:
         return -1;
     }
 
-    // Use bitwise OR assignment operator to update wchanged
+    // Loop interno do código de treinamento.
+    // Ele retorna se o peso foi atualizado ou não.
+    // Ele é chamado dento do while do loop externo.
     bool i_train(int dataset_size, int* dataset, int* target) {
         int a_limit = dataset_size / dimention;
         bool wchanged = false;
-        for (int i = 0; i < a_limit; ++i) {  // Use pre-increment
+        for (int i = 0; i < a_limit; ++i) {
             double NET = dot_product(i, dataset);
             int OUT = act_func(NET);
             wchanged |= ch_weights(OUT, target[i], i, dataset);
@@ -55,7 +59,7 @@ private:
     }
 
 public:
-    // Initialize weights in the constructor initializer list
+
     Perceptron(int dimention, double learningRate, double theta)
             : dimention(dimention), learningRate(learningRate), theta(theta), weights(new double[dimention + 1]{}) {}
 
@@ -63,21 +67,23 @@ public:
         delete[] weights;
     }
 
+    // Loop externo do código de treinamento.
     void train(int dataset_size, int* dataset, int* target) {
         while (i_train(dataset_size, dataset, target)) {}
     }
 
+    // Função para predizer o resultado.
     int predict(const int* dataset) {
         double NET = 0.0;
-        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+        for (int i = 0; i < dimention; ++i) {
             NET += weights[i] * dataset[i];
         }
         return act_func(NET + bias * weights[dimention]);
     }
 
-    // Use '\n' instead of std::endl to avoid unnecessary flushing of the output stream
+
     void print_weights() {
-        for (int i = 0; i < dimention; ++i) {  // Use pre-increment
+        for (int i = 0; i < dimention; ++i) {
             std::cout << "w" << i << " = " << weights[i] << '\n';
         }
         std::cout << "w_bias = " << weights[dimention] << '\n';
@@ -155,5 +161,3 @@ int main() {
 
     delete pl;
 }
-// 'C', 'A', 'A',
-//
